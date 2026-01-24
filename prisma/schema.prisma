@@ -1,0 +1,30 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      String   @default("PATIENT") // PATIENT, DOCTOR, ADMIN
+  createdAt DateTime @default(now())
+  analyses  Analysis[]
+}
+
+model Analysis {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  type        String   // BRAIN, SPINE, etc.
+  status      String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  fileUrl     String
+  result      String?  // Stored as JSON string
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

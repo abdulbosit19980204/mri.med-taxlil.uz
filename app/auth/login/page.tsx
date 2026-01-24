@@ -1,0 +1,188 @@
+"use client"
+
+import Link from "next/link"
+import Image from "next/image"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Activity, Mail, Lock, ArrowRight, Loader2, Shield } from "lucide-react"
+import { useLanguage } from "@/context/language-context"
+import { useAuth } from "@/context/auth-context"
+import { cn } from "@/lib/utils"
+import React from "react"
+
+export default function LoginPage() {
+  const { t } = useLanguage()
+  const { login, isLoggedIn } = useAuth()
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      router.push("/dashboard")
+    }
+  }, [isLoggedIn, router])
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setLoading(true)
+    setError("")
+
+    const formData = new FormData(e.currentTarget)
+    const email = formData.get("email")
+    const password = formData.get("password")
+
+    try {
+      const res = await fetch('http://localhost:8000/api/auth/token/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.detail || t.common.error)
+      }
+
+      // Fetch user profile info
+      const meRes = await fetch('http://localhost:8000/api/me/', {
+        headers: { 
+          'Authorization': `Bearer ${data.access}`
+        }
+      })
+      
+      const userData = await meRes.json()
+      
+      // Pass token AND actual user object to AuthContext
+      login(data.access, userData, data.refresh)
+
+      router.push('/dashboard')
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="flex h-screen w-full bg-[#f8fafc] dark:bg-[#020617] overflow-hidden">
+      {/* Left Side: Sophisticated Background Visual */}
+      <div className="hidden lg:flex flex-[1.2] relative bg-[#010413] items-center justify-center overflow-hidden">
+        <Image
+          src="/hero_brain_mri_3d.png"
+          alt="Anatomical Render"
+          fill
+          className="object-cover opacity-60 scale-110"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#010413] via-transparent to-[#010413]/80" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#010413] via-transparent to-transparent" />
+        <div className="absolute inset-0 diagnostic-grid opacity-10" />
+
+        <div className="relative z-10 w-full max-w-xl p-12 space-y-8">
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-md">
+              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[9px] font-mono font-bold text-white/40 uppercase tracking-[0.3em]">System_Status: Optimal</span>
+            </div>
+            <h2 className="text-5xl font-black text-white tracking-tighter leading-none opacity-80">
+              CLINICAL<br />DIAGNOSTICS
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 pt-12 border-t border-white/5 opacity-40">
+            <div className="space-y-1">
+              <p className="text-[10px] font-mono text-white/40 uppercase tracking-widest">Protocol</p>
+              <p className="text-xs font-bold text-white">NEURA_SCAN_V4</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[10px] font-mono text-white/40 uppercase tracking-widest">Encryption</p>
+              <p className="text-xs font-bold text-white">AES_256_GCM</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="absolute bottom-12 left-12 z-20">
+          <p className="text-[10px] font-mono text-white/20 uppercase tracking-[0.2em]">© 2026 Med-Taxlil AI / SECURE_LINK_V4</p>
+        </div>
+      </div>
+
+      {/* Right Side: Form */}
+      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-white dark:bg-[#020617] relative">
+        <div className="absolute top-0 left-0 w-full h-full bg-[url('/grid.svg')] opacity-[0.02] pointer-events-none" />
+
+        <div className="w-full max-w-md space-y-10 relative z-10">
+          <div className="space-y-6 text-center lg:text-left">
+            <div className="flex justify-center lg:justify-start">
+              <Link href="/" className="group inline-flex items-center gap-4">
+                <div className="p-3 rounded-2xl bg-primary/10 border border-primary/20 group-hover:scale-110 transition-all duration-500 shadow-2xl shadow-primary/20">
+                  <Image src="/logo.png" alt="Logo" width={40} height={40} className="rounded-xl" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black tracking-tighter uppercase text-slate-900 dark:text-white">Med-Taxlil <span className="text-primary italic">AI</span></h2>
+                  <p className="text-[8px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">Clinical_Analysis_Platform</p>
+                </div>
+              </Link>
+            </div>
+
+            <div className="space-y-2">
+              <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{t.auth.login_title}</h1>
+              <p className="text-slate-500 dark:text-slate-400 font-medium">To'liq MRT tahlili va diagnostika markaziga xush kelibsiz.</p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-[10px] text-red-500 font-bold uppercase tracking-widest text-center animate-shake">
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-[9px] font-bold uppercase tracking-widest ml-1 text-slate-400">{t.auth.email}</Label>
+                <div className="relative group">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
+                  <Input id="email" name="email" type="email" autoComplete="email" placeholder="shifokor@med-taxlil.uz" className="pl-12 h-14 rounded-xl bg-slate-50 dark:bg-white/5 border-slate-100 dark:border-white/10 focus:ring-2 focus:ring-primary focus:bg-white transition-all text-sm" required />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between ml-1">
+                  <Label htmlFor="password" className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{t.auth.password}</Label>
+                  <Link href="#" className="text-[9px] font-bold text-primary hover:underline uppercase tracking-tighter">{t.auth.forgot_password}</Link>
+                </div>
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
+                  <Input id="password" name="password" type="password" autoComplete="current-password" className="pl-12 h-14 rounded-xl bg-slate-50 dark:bg-white/5 border-slate-100 dark:border-white/10 focus:ring-2 focus:ring-primary focus:bg-white transition-all text-sm" required />
+                </div>
+              </div>
+            </div>
+
+            <Button type="submit" className="w-full h-14 rounded-xl text-base font-bold shadow-xl shadow-primary/20 mt-4 group bg-primary hover:scale-[1.01] active:scale-[0.99] transition-all" disabled={loading}>
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <div className="flex items-center gap-2">{t.auth.login_link} <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" /></div>}
+            </Button>
+          </form>
+
+          <div className="pt-6 space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="h-[1px] flex-1 bg-slate-100 dark:bg-white/10" />
+              <span className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.2em]">{t.auth.no_account}</span>
+              <div className="h-[1px] flex-1 bg-slate-100 dark:bg-white/10" />
+            </div>
+            <Link href="/auth/register">
+              <Button variant="outline" className="w-full h-14 rounded-xl font-bold border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 transition-all text-slate-600 dark:text-slate-400 uppercase tracking-widest text-[10px]">
+                {t.auth.register_link}
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

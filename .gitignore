@@ -1,0 +1,51 @@
+# dependencies
+/node_modules
+/.next/
+/out/
+/build
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+
+# env files
+.env*
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# backend media & storage
+/backend/media/
+/backend/mri_uploads/
+/backend/mri_previews/
+/backend/db.sqlite3
+/backend/db.sqlite3-journal
+
+# ML models & weights
+/backend/*.h5
+/backend/*.pth
+/backend/*.model
+/backend/*.keras
+/backend/*.weights
+/backend/*.bin
+
+# Training logs and states
+/backend/ml/data/
+/backend/ml/training_stats.json
+/backend/ml/training_results/
+
+# python / dev tools
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+.pytest_cache/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.env
+.env.local

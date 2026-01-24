@@ -1,0 +1,119 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: med_taxlil_postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-medtaxlil}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secure_password_change_me}
+      POSTGRES_DB: ${DB_NAME:-med_taxlil_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-medtaxlil}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - med_taxlil_network
+
+  # Redis Cache & Task Queue
+  redis:
+    image: redis:7-alpine
+    container_name: med_taxlil_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - med_taxlil_network
+
+  # FastAPI AI Analysis Server
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: med_taxlil_backend
+    environment:
+      PYTHONUNBUFFERED: 1
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-medtaxlil}
+      DB_PASSWORD: ${DB_PASSWORD:-secure_password_change_me}
+      DB_NAME: ${DB_NAME:-med_taxlil_db}
+      REDIS_URL: redis://redis:6379/0
+      ENV: ${ENV:-production}
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - ./uploads:/app/uploads
+      - ./models:/app/models
+    ports:
+      - "8000:8000"
+    networks:
+      - med_taxlil_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  # Celery Worker (for async tasks)
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: med_taxlil_celery
+    command: celery -A tasks worker --loglevel=info
+    environment:
+      PYTHONUNBUFFERED: 1
+      DB_HOST: postgres
+      DB_USER: ${DB_USER:-medtaxlil}
+      DB_PASSWORD: ${DB_PASSWORD:-secure_password_change_me}
+      DB_NAME: ${DB_NAME:-med_taxlil_db}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./backend:/app
+    networks:
+      - med_taxlil_network
+
+  # Nginx Reverse Proxy (optional)
+  nginx:
+    image: nginx:alpine
+    container_name: med_taxlil_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+    networks:
+      - med_taxlil_network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  med_taxlil_network:
+    driver: bridge
