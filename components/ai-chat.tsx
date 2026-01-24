@@ -38,10 +38,8 @@ export default function AIChat({ analysisId, onClose }: AIChatProps) {
         const initChat = async () => {
             try {
                 const res = await apiClient.post(`/analyses/${analysisId}/chat/`, {
-                    body: JSON.stringify({
-                        message: "Please provide a brief initial analysis summary of this scan, including key findings and any notable observations.",
-                        history: []
-                    })
+                    message: "Please provide a brief initial analysis summary of this scan, including key findings and any notable observations.",
+                    history: []
                 })
 
                 if (res.ok) {
@@ -77,10 +75,8 @@ export default function AIChat({ analysisId, onClose }: AIChatProps) {
 
         try {
             const res = await apiClient.post(`/analyses/${analysisId}/chat/`, {
-                body: JSON.stringify({
-                    message: input,
-                    history: messages.map(m => ({ role: m.role, content: m.content }))
-                })
+                message: input,
+                history: messages.map(m => ({ role: m.role, content: m.content }))
             })
 
             if (res.ok) {
