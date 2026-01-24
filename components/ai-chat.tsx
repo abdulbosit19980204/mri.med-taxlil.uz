@@ -52,7 +52,7 @@ export default function AIChat({ analysisId, onClose }: AIChatProps) {
                     }
                 }
             } catch (e) {
-                console.error("Failed to initialize chat", e)
+                // Silent error handling for metrics/analytics in production
             } finally {
                 setInitializing(false)
             }
@@ -83,12 +83,11 @@ export default function AIChat({ analysisId, onClose }: AIChatProps) {
                 const data = await res.json()
                 const aiMessage: Message = {
                     role: 'assistant',
-                    content: data.error ? "I apologize, but I encountered an error. Please try again." : data.response
+                    content: data.response // Show the actual response, which contains error details if failed
                 }
                 setMessages(prev => [...prev, aiMessage])
             }
         } catch (e) {
-            console.error("Chat error", e)
             setMessages(prev => [...prev, {
                 role: 'assistant',
                 content: "I apologize, but I'm having trouble connecting. Please try again."

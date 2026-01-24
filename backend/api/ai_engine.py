@@ -241,25 +241,21 @@ Keep responses concise but informative. Use medical terminology appropriately.""
         
         for model_name in models_to_try:
             try:
-                print(f"Chat attempt with {model_name}...")
                 generative_model = genai.GenerativeModel(model_name)
                 
                 # Prepare content
                 content_parts = [system_prompt, f"\nDoctor's Question: {user_message}"]
                 if img:
-                    print("- Including image in chat context")
                     content_parts.append(img)
                 
                 response = generative_model.generate_content(content_parts)
                 
-                print(f"Chat success with {model_name}")
                 return {
                     "response": response.text,
                     "model": model_name,
                     "error": False
                 }
             except Exception as e:
-                print(f"Chat failed with {model_name}: {e}")
                 last_error = str(e)
                 continue
         
