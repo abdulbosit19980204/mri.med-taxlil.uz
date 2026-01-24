@@ -229,20 +229,30 @@ Previous conversation:
 Answer the doctor's question accurately and professionally. Reference specific data from the metadata or findings when relevant.
 Keep responses concise but informative. Use medical terminology appropriately."""
 
-        # Try models in order
-        models_to_try = ['gemini-1.5-pro', 'gemini-1.5-flash']
+        # Try models in order (Fallback strategy)
+        models_to_try = [
+            'gemini-1.5-flash-latest', 
+            'gemini-1.5-pro-latest',
+            'gemini-pro',
+            'gemini-1.0-pro'
+        ]
+        
+        last_error = None
         
         for model_name in models_to_try:
             try:
+                print(f"Chat attempt with {model_name}...")
                 generative_model = genai.GenerativeModel(model_name)
                 
                 # Prepare content
                 content_parts = [system_prompt, f"\nDoctor's Question: {user_message}"]
                 if img:
+                    print("- Including image in chat context")
                     content_parts.append(img)
                 
                 response = generative_model.generate_content(content_parts)
                 
+                print(f"Chat success with {model_name}")
                 return {
                     "response": response.text,
                     "model": model_name,
@@ -250,10 +260,12 @@ Keep responses concise but informative. Use medical terminology appropriately.""
                 }
             except Exception as e:
                 print(f"Chat failed with {model_name}: {e}")
+                last_error = str(e)
                 continue
         
+        print(f"All chat models failed. Last error: {last_error}")
         return {
-            "response": "I apologize, but I'm unable to process your question at the moment. Please try again.",
+            "response": f"System Error: Unable to connect to AI models. Details: {last_error}",
             "error": True
         }
 

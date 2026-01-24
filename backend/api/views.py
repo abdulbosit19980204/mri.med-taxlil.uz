@@ -2,7 +2,7 @@ from rest_framework import viewsets, permissions, status, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from .models import User, Analysis, Dataset, SystemSettings
+from .models import User, Analysis, Dataset, SystemSettings, ChatMessage
 from .serializers import UserSerializer, AnalysisSerializer, DatasetSerializer
 from django.conf import settings
 from django.db import models
@@ -395,6 +395,7 @@ class AnalysisViewSet(viewsets.ModelViewSet):
     def chat(self, request, pk=None):
         """
         AI chat endpoint for asking questions about an analysis.
+        Uses persistent ChatMessage storage.
         """
         from .ai_engine import ai_engine
         
@@ -408,23 +409,46 @@ class AnalysisViewSet(viewsets.ModelViewSet):
             )
         
         user_message = request.data.get('message', '')
-        conversation_history = request.data.get('history', [])
+        
+        # Load existing history from DB
+        db_history = ChatMessage.objects.filter(analysis=analysis).order_by('created_at')
+        conversation_history = [{'role': msg.role, 'content': msg.content} for msg in db_history]
         
         if not user_message:
-            return Response(
-                {"error": "Message is required"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            # Just return history if no message (for initialization)
+            return Response({
+                "response": "Chat history loaded.",
+                "history": conversation_history
+            }, status=status.HTTP_200_OK)
         
         try:
+            # Save user message
+            ChatMessage.objects.create(
+                analysis=analysis,
+                user=request.user,
+                role='user',
+                content=user_message
+            )
+            
+            # Get AI response
             result = ai_engine.chat_with_analysis(
                 analysis=analysis,
                 user_message=user_message,
                 conversation_history=conversation_history
             )
             
+            # Save AI response
+            if not result.get('error'):
+                ChatMessage.objects.create(
+                    analysis=analysis,
+                    user=request.user, # AI acts on behalf of system/user context
+                    role='assistant',
+                    content=result['response']
+                )
+            
             return Response(result, status=status.HTTP_200_OK)
         except Exception as e:
+            print(f"Chat Error: {e}")
             return Response(
                 {"error": str(e), "response": "An error occurred while processing your question."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
