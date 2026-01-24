@@ -390,3 +390,42 @@ class AnalysisViewSet(viewsets.ModelViewSet):
                 pass
             if temp_dir and os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir)
+
+    @action(detail=True, methods=['post'])
+    def chat(self, request, pk=None):
+        """
+        AI chat endpoint for asking questions about an analysis.
+        """
+        from .ai_engine import ai_engine
+        
+        analysis = self.get_object()
+        
+        # Ensure user has access to this analysis
+        if analysis.user != request.user:
+            return Response(
+                {"error": "You don't have permission to chat about this analysis"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        user_message = request.data.get('message', '')
+        conversation_history = request.data.get('history', [])
+        
+        if not user_message:
+            return Response(
+                {"error": "Message is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            result = ai_engine.chat_with_analysis(
+                analysis=analysis,
+                user_message=user_message,
+                conversation_history=conversation_history
+            )
+            
+            return Response(result, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"error": str(e), "response": "An error occurred while processing your question."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

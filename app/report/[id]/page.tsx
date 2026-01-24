@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowLeft, Download, Activity, User, Clock, AlertTriangle, Loader2, Info, ChevronRight, CornerDownRight, Database, Plus as PlusIcon } from "lucide-react"
+import { ArrowLeft, Download, Activity, User, Clock, AlertTriangle, Loader2, Info, ChevronRight, CornerDownRight, Database, Plus as PlusIcon, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import dynamic from 'next/dynamic'
 import { apiClient } from "@/lib/api-client"
 import { useLanguage } from "@/context/language-context"
+import AIChat from "@/components/ai-chat"
 
 const DicomViewer = dynamic(() => import('@/components/dicom-viewer'), { ssr: false })
 const BrainViewer3D = dynamic(() => import('@/components/brain-viewer-3d'), { ssr: false })
@@ -20,6 +21,7 @@ export default function ReportPage({ params }: { params: { id: string } }) {
     const [analysis, setAnalysis] = useState<any>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState("")
+    const [showChat, setShowChat] = useState(false)
 
     useEffect(() => {
         async function fetchAnalysis() {
@@ -94,6 +96,13 @@ export default function ReportPage({ params }: { params: { id: string } }) {
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
+                    <Button
+                        onClick={() => setShowChat(true)}
+                        className="bg-primary hover:bg-primary/90 text-white gap-2 font-bold uppercase tracking-widest text-xs shadow-xl shadow-primary/30"
+                    >
+                        <Sparkles className="h-4 w-4" />
+                        AI Ask
+                    </Button>
                     <div className={`hidden md:flex items-center gap-2 px-3 py-1 rounded border border-primary/20 bg-primary/5 text-xs text-primary ${status === 'PROCESSING' ? 'animate-pulse' : ''}`}>
                         <div className={`h-2 w-2 rounded-full ${status === 'COMPLETED' ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`} />
                         SYSTEM_{status}
@@ -267,6 +276,9 @@ export default function ReportPage({ params }: { params: { id: string } }) {
                     </div>
                 </main>
             </div>
+
+            {/* AI Chat Panel */}
+            {showChat && <AIChat analysisId={params.id} onClose={() => setShowChat(false)} />}
         </div>
     )
 }

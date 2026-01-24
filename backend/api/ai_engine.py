@@ -157,4 +157,104 @@ class MedicalAIEngine:
             "processed_at": time.strftime("%Y-%m-%d %H:%M:%S")
         }
 
+    def chat_with_analysis(self, analysis, user_message, conversation_history=None):
+        """
+        Chat with AI about a specific analysis.
+        Provides context from metadata, findings, and image.
+        """
+        api_key = self._get_api_key()
+        
+        if not api_key:
+            return {
+                "response": "AI chat is not available. Please configure Gemini API key in system settings.",
+                "error": True
+            }
+        
+        genai.configure(api_key=api_key)
+        
+        # Build context from analysis
+        context_parts = []
+        
+        # Add metadata context
+        if analysis.result and 'dicom_metadata' in analysis.result:
+            metadata = analysis.result['dicom_metadata']
+            context_parts.append(f"DICOM Metadata Summary:\n{json.dumps(metadata, indent=2)[:1000]}")
+        
+        # Add findings context
+        if analysis.result and 'ai_analysis' in analysis.result:
+            findings = analysis.result['ai_analysis']
+            context_parts.append(f"\nAI Analysis Findings:\n{json.dumps(findings, indent=2)}")
+        
+        # Add patient info
+        if analysis.patient_name:
+            context_parts.append(f"\nPatient: {analysis.patient_name}")
+        if analysis.scan_type:
+            context_parts.append(f"Scan Type: {analysis.scan_type}")
+        
+        # Load image if available
+        img = None
+        try:
+            if analysis.file and os.path.exists(analysis.file.path):
+                file_path = analysis.file.path
+                if file_path.lower().endswith('.dcm'):
+                    import pydicom
+                    import numpy as np
+                    ds = pydicom.dcmread(file_path)
+                    pixel_array = ds.pixel_array
+                    if pixel_array.max() > 0:
+                        pixel_array = ((pixel_array - pixel_array.min()) / (pixel_array.max() - pixel_array.min()) * 255).astype(np.uint8)
+                    img = Image.fromarray(pixel_array)
+                else:
+                    img = Image.open(file_path)
+        except Exception as e:
+            print(f"Image load error for chat: {e}")
+        
+        # Build conversation context
+        conversation_context = ""
+        if conversation_history:
+            for msg in conversation_history[-5:]:  # Last 5 messages for context
+                role = msg.get('role', 'user')
+                content = msg.get('content', '')
+                conversation_context += f"\n{role.upper()}: {content}"
+        
+        # Construct prompt
+        system_prompt = f"""You are a medical AI assistant helping doctors analyze medical scans.
+You have access to the following information about this scan:
+
+{chr(10).join(context_parts)}
+
+Previous conversation:
+{conversation_context}
+
+Answer the doctor's question accurately and professionally. Reference specific data from the metadata or findings when relevant.
+Keep responses concise but informative. Use medical terminology appropriately."""
+
+        # Try models in order
+        models_to_try = ['gemini-1.5-pro', 'gemini-1.5-flash']
+        
+        for model_name in models_to_try:
+            try:
+                generative_model = genai.GenerativeModel(model_name)
+                
+                # Prepare content
+                content_parts = [system_prompt, f"\nDoctor's Question: {user_message}"]
+                if img:
+                    content_parts.append(img)
+                
+                response = generative_model.generate_content(content_parts)
+                
+                return {
+                    "response": response.text,
+                    "model": model_name,
+                    "error": False
+                }
+            except Exception as e:
+                print(f"Chat failed with {model_name}: {e}")
+                continue
+        
+        return {
+            "response": "I apologize, but I'm unable to process your question at the moment. Please try again.",
+            "error": True
+        }
+
 ai_engine = MedicalAIEngine()
