@@ -20,6 +20,7 @@ export default function DashboardPage() {
     const router = useRouter()
     const [activeTab, setActiveTab] = useState("overview")
     const [analyses, setAnalyses] = useState<any[]>([])
+    const [totalCount, setTotalCount] = useState(0)
     const [mlStats, setMlStats] = useState<any>(null)
     const [loading, setLoading] = useState(true)
 
@@ -32,7 +33,13 @@ export default function DashboardPage() {
                 ])
                 if (resAnalyses.ok) {
                     const data = await resAnalyses.json()
-                    if (Array.isArray(data)) setAnalyses(data)
+                    if (data.results) {
+                        setAnalyses(data.results)
+                        setTotalCount(data.count)
+                    } else if (Array.isArray(data)) {
+                        setAnalyses(data)
+                        setTotalCount(data.length)
+                    }
                 }
                 if (resStats.ok) {
                     const stats = await resStats.json()
@@ -153,7 +160,7 @@ export default function DashboardPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
                         <StatCard
                             title={t.dashboard.total_scans}
-                            value={analyses.length.toString()}
+                            value={totalCount.toString()}
                             trend="+12%"
                             icon={<FileText className="h-4 w-4 text-white" />}
                             color="bg-primary"
@@ -318,7 +325,7 @@ function AnalysisRow({ item, t }: { item: any, t: any }) {
                     </div>
                     <div className="space-y-1 text-left">
                         <p className="font-black text-lg text-slate-900 dark:text-white group-hover:text-primary transition-colors truncate max-w-[200px]">
-                            {item.result?.dicom_metadata?.patient_info?.name || item.user_email || 'Subject_Alpha'}
+                            {item.patient_name || item.result?.dicom_metadata?.Patient?.PatientName || item.user_email || 'Subject_Alpha'}
                         </p>
                         <div className="flex items-center gap-3">
                             <Badge variant="outline" className="text-[10px] font-bold uppercase border-slate-200 dark:border-white/10">{item.type}</Badge>

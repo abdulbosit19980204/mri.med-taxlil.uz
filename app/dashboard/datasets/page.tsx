@@ -25,7 +25,7 @@ export default function DatasetsPage() {
     useEffect(() => {
         loadDatasets()
         const interval = setInterval(() => {
-            if (datasets.some(d => d.status === 'PROCESSING' || d.status === 'UPLOADING')) {
+            if (Array.isArray(datasets) && datasets.some(d => d.status === 'PROCESSING' || d.status === 'UPLOADING')) {
                 loadDatasets()
             }
         }, 3000)
@@ -37,7 +37,11 @@ export default function DatasetsPage() {
             const res = await apiClient.get('/datasets/')
             if (res.ok) {
                 const data = await res.json()
-                setDatasets(data)
+                if (data.results) {
+                    setDatasets(data.results)
+                } else if (Array.isArray(data)) {
+                    setDatasets(data)
+                }
             }
         } catch (e) {
             console.error("Failed to load datasets", e)
