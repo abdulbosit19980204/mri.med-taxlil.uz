@@ -21,38 +21,52 @@ export default function DashboardPage() {
     const [activeTab, setActiveTab] = useState("overview")
     const [analyses, setAnalyses] = useState<any[]>([])
     const [totalCount, setTotalCount] = useState(0)
+    const [page, setPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
     const [mlStats, setMlStats] = useState<any>(null)
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        async function loadData() {
-            try {
-                const [resAnalyses, resStats] = await Promise.all([
-                    apiClient.get('/analyses/'),
-                    apiClient.get('/datasets/stats/')
-                ])
-                if (resAnalyses.ok) {
-                    const data = await resAnalyses.json()
-                    if (data.results) {
-                        setAnalyses(data.results)
-                        setTotalCount(data.count)
-                    } else if (Array.isArray(data)) {
-                        setAnalyses(data)
-                        setTotalCount(data.length)
-                    }
-                }
-                if (resStats.ok) {
-                    const stats = await resStats.json()
-                    setMlStats(stats)
-                }
-            } catch (e) {
-                console.error("Failed to load dashboard data", e)
-            } finally {
-                setLoading(false)
-            }
-        }
         loadData()
     }, [])
+
+    useEffect(() => {
+        loadAnalyses(page)
+    }, [page])
+
+    async function loadData() {
+        try {
+            const resStats = await apiClient.get('/datasets/stats/')
+            if (resStats.ok) {
+                const stats = await resStats.json()
+                setMlStats(stats)
+            }
+        } catch (e) {
+            console.error("Failed to load dashboard stats", e)
+        }
+    }
+
+    async function loadAnalyses(pageNum: number) {
+        try {
+            const res = await apiClient.get(`/analyses/?page=${pageNum}`)
+            if (res.ok) {
+                const data = await res.json()
+                if (data.results) {
+                    setAnalyses(data.results)
+                    setTotalCount(data.count)
+                    setTotalPages(Math.ceil(data.count / 10))
+                } else if (Array.isArray(data)) {
+                    setAnalyses(data)
+                    setTotalCount(data.length)
+                    setTotalPages(1)
+                }
+            }
+        } catch (e) {
+            console.error("Failed to load analyses", e)
+        } finally {
+            setLoading(false)
+        }
+    }
 
     const dbCount = typeof mlStats?.db_datasets === 'object' ? (mlStats.db_datasets.count || 0) : (mlStats?.db_datasets || 0)
     const totalFiles = (mlStats?.local_datasets?.file_count || 0) + dbCount
@@ -195,7 +209,7 @@ export default function DashboardPage() {
                                     <Button variant="ghost" size="sm" className="text-xs font-bold uppercase tracking-widest text-primary hover:bg-primary/5">{t.dashboard.view_all}</Button>
                                 </Link>
                             </div>
-                            <div className="divide-y divide-slate-100 dark:divide-white/5 max-h-[600px] overflow-y-auto custom-scrollbar">
+                            <div className="divide-y divide-slate-100 dark:divide-white/5">
                                 {analyses.length > 0 ? (
                                     analyses.map((item) => (
                                         <AnalysisRow key={item.id} item={item} t={t} />
@@ -206,6 +220,36 @@ export default function DashboardPage() {
                                     </div>
                                 )}
                             </div>
+                            {totalPages > 1 && (
+                                <div className="p-6 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                        Topildi: {totalCount} tahlil
+                                    </p>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            disabled={page === 1}
+                                            onClick={() => setPage(page - 1)}
+                                            className="rounded-lg h-10 px-4 font-black uppercase tracking-widest text-[10px] border-slate-200 dark:border-white/10"
+                                        >
+                                            Oldingi
+                                        </Button>
+                                        <div className="h-10 px-4 border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 rounded-lg flex items-center justify-center">
+                                            <span className="text-[10px] font-black text-primary">Sahifa {page} / {totalPages}</span>
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            disabled={page === totalPages}
+                                            onClick={() => setPage(page + 1)}
+                                            className="rounded-lg h-10 px-4 font-black uppercase tracking-widest text-[10px] border-slate-200 dark:border-white/10"
+                                        >
+                                            Keyingi
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
                         </Card>
 
                         {/* Dataset Sources Sidebar */}
@@ -278,8 +322,8 @@ function NavButton({ active, icon, label, href }: { active: boolean, icon: React
 function StatCard({ title, value, trend, icon, color, chart }: { title: string, value: string, trend: string, icon: React.ReactNode, color: string, chart: number[] }) {
     const isPositive = trend.startsWith('+');
     return (
-        <Card className="rounded-2xl border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden group hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 text-left relative">
-            <CardContent className="p-5 flex items-center justify-between">
+        <Card className="h-full rounded-2xl border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden group hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 text-left relative">
+            <CardContent className="p-5 flex items-center justify-between h-full">
                 <div className="flex flex-col justify-between h-full relative z-10">
                     <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shadow-md transition-all group-hover:scale-105 mb-3", color)}>
                         {icon}
