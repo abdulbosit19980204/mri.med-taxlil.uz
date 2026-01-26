@@ -231,8 +231,8 @@ Keep responses concise but informative. Use medical terminology appropriately.""
 
         # Try models in order (Fallback strategy)
         models_to_try = [
-            'gemini-1.5-flash-latest', 
-            'gemini-1.5-pro-latest',
+            'gemini-1.5-pro',
+            'gemini-1.5-flash', 
             'gemini-pro',
             'gemini-1.0-pro'
         ]

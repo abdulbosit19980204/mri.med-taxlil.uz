@@ -69,11 +69,11 @@ export default function ContactPage() {
                                 </div>
                                 <div>
                                     <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Telefon</h3>
-                                    <a href="tel:+998712000000" className="text-slate-600 dark:text-slate-400 hover:text-violet-500 transition-colors block">
-                                        +998 (71) 200-00-00
+                                    <a href="tel:+998900066639" className="text-slate-600 dark:text-slate-400 hover:text-violet-500 transition-colors block">
+                                        +998 90 006 66 39
                                     </a>
-                                    <a href="tel:+998901234567" className="text-slate-600 dark:text-slate-400 hover:text-violet-500 transition-colors block mt-1">
-                                        +998 (90) 123-45-67
+                                    <a href="tel:+998999992334" className="text-slate-600 dark:text-slate-400 hover:text-violet-500 transition-colors block mt-1">
+                                        +998 99 999 23 34
                                     </a>
                                 </div>
                             </div>
