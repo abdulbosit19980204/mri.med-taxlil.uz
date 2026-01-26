@@ -38,8 +38,8 @@ export function SiteFooter() {
                     <div className="text-left">
                         <h3 className="font-bold text-slate-900 dark:text-white mb-6 uppercase tracking-widest text-xs">Global Resurslar</h3>
                         <ul className="space-y-3 text-sm text-slate-500">
-                            <li><Link href="https://med-taxlil.uz/ekg" className="hover:text-primary transition-colors">Med-Taxlil {t.nav.ekg}</Link></li>
-                            <li><Link href="https://med-taxlil.uz/eeg" className="hover:text-primary transition-colors">Med-Taxlil {t.nav.eeg}</Link></li>
+                            <li><Link href="https://ecg.med-taxlil.uz" className="hover:text-primary transition-colors">Med-Taxlil {t.nav.ekg}</Link></li>
+                            <li><Link href="https://eeg.med-taxlil.uz" className="hover:text-primary transition-colors">Med-Taxlil {t.nav.eeg}</Link></li>
                             <li><Link href="https://med-taxlil.uz/" className="hover:text-primary transition-colors flex items-center gap-2"><Globe className="h-3 w-3" /> Asosiy Sayt</Link></li>
                             <li><Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
                         </ul>

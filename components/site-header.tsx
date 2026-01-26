@@ -19,8 +19,8 @@ export function SiteHeader() {
 
   const navItems = [
     { name: t.nav.home, href: "https://med-taxlil.uz/" },
-    { name: t.nav.ekg, href: "https://med-taxlil.uz/ekg" },
-    { name: t.nav.mri, href: "/" },
+    { name: t.nav.ekg, href: "https://ecg.med-taxlil.uz" },
+    { name: t.nav.eeg, href: "https://eeg.med-taxlil.uz" },
     { name: t.nav.eeg, href: "https://med-taxlil.uz/eeg" },
     { name: t.nav.features, href: "/#features" },
     { name: t.nav.contact, href: "/#contact" },
