@@ -9,8 +9,16 @@ import {
 } from 'lucide-react'
 import { useLanguage } from '@/context/language-context'
 import { apiClient } from '@/lib/api-client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { cn } from '@/lib/utils'
+import { exportAnalysisPDF } from '@/lib/export-pdf'
+
+/** Build absolute URL from a relative /media/... path. */
+function toAbsUrl(path: string): string {
+    if (!path || path.startsWith('http')) return path
+    const base = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'
+    return `${base}${path}`
+}
 
 /** Compute health level from AI findings */
 function getHealthLevel(item: any): 'healthy' | 'warning' | 'sick' | 'unknown' {
@@ -76,6 +84,44 @@ export default function AnalysesPage() {
       console.error("Failed to load analyses", e)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!window.confirm("Haqiqatdan ham bu tahlilni o'chirib tashlamoqchimisiz? Barcha fayllar va hisobotlar butunlay yo'qoladi.")) return
+    
+    try {
+      const res = await apiClient.delete(`/analyses/${id}/`)
+      if (res.ok) {
+        setAnalyses(prev => prev.filter(p => p.id !== id))
+        setTotalCount(prev => prev - 1)
+      } else {
+        alert("O'chirishda xatolik yuz berdi")
+      }
+    } catch (err) {
+      console.error(err)
+      alert("Server bilan bog'lanishda xatolik")
+    }
+  }
+
+  const handleDownload = async (analysis: any, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (analysis.status === 'COMPLETED') {
+      // Logic from walkthrough suggests PDF is favored for completed
+      try {
+        await exportAnalysisPDF(analysis)
+      } catch (err) {
+        console.error(err)
+        // Fallback to raw file if PDF fails
+        window.open(toAbsUrl(analysis.file), '_blank')
+      }
+    } else {
+      // Just download the raw file for pending/processing
+      window.open(toAbsUrl(analysis.file), '_blank')
     }
   }
 
@@ -219,6 +265,7 @@ export default function AnalysesPage() {
                       variant="outline"
                       size="sm"
                       title="Yuklash"
+                      onClick={(e) => handleDownload(analysis, e)}
                     >
                       <Download className="w-4 h-4" />
                     </Button>
@@ -227,6 +274,7 @@ export default function AnalysesPage() {
                       size="sm"
                       className="text-red-500 hover:bg-red-500/10"
                       title="O'chirish"
+                      onClick={(e) => handleDelete(analysis.id, e)}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>

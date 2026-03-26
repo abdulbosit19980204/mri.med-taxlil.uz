@@ -221,6 +221,30 @@ class AnalysisViewSet(viewsets.ModelViewSet):
             
         return queryset
 
+    def perform_destroy(self, instance):
+        import os
+        import shutil
+        from django.conf import settings
+        
+        # 1. Delete original file
+        if instance.file and os.path.isfile(instance.file.path):
+            try: os.remove(instance.file.path)
+            except: pass
+            
+        # 2. Delete preview image
+        if instance.preview_image and os.path.isfile(instance.preview_image.path):
+            try: os.remove(instance.preview_image.path)
+            except: pass
+            
+        # 3. Delete frames directory
+        frames_dir = os.path.join(settings.MEDIA_ROOT, 'frames', str(instance.id))
+        if os.path.exists(frames_dir):
+            try: shutil.rmtree(frames_dir)
+            except: pass
+            
+        # 4. Delete the DB record
+        instance.delete()
+
     def perform_create(self, serializer):
         # Determine analysis status
         analysis = serializer.save(user=self.request.user, status='PROCESSING')

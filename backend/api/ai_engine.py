@@ -180,7 +180,8 @@ class MedicalAIEngine:
         # Add metadata context
         if analysis.result and 'dicom_metadata' in analysis.result:
             metadata = analysis.result['dicom_metadata']
-            context_parts.append(f"DICOM Metadata Summary:\n{json.dumps(metadata, indent=2)[:1000]}")
+            # Increased limit to 10k chars for much richer context
+            context_parts.append(f"DICOM Metadata Summary:\n{json.dumps(metadata, indent=2)[:10000]}")
         
         # Add findings context
         if analysis.result and 'ai_analysis' in analysis.result:
@@ -214,7 +215,8 @@ class MedicalAIEngine:
         # Build conversation context
         conversation_context = ""
         if conversation_history:
-            for msg in conversation_history[-5:]:  # Last 5 messages for context
+            # Use ALL history (up to 100 messages) for full context continuity
+            for msg in conversation_history[-100:]: 
                 role = msg.get('role', 'user')
                 content = msg.get('content', '')
                 conversation_context += f"\n{role.upper()}: {content}"
