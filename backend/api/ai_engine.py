@@ -54,8 +54,8 @@ class MedicalAIEngine:
 
             img = None
             try:
-                # Load image (DICOM logic)
-                if file_path.lower().endswith('.dcm'):
+                # Load image (Medical logic)
+                if file_path.lower().endswith(('.dcm', '.ima', '.img')):
                     import pydicom
                     import numpy as np
                     ds = pydicom.dcmread(file_path)
@@ -199,7 +199,7 @@ class MedicalAIEngine:
         try:
             if analysis.file and os.path.exists(analysis.file.path):
                 file_path = analysis.file.path
-                if file_path.lower().endswith('.dcm'):
+                if file_path.lower().endswith(('.dcm', '.ima', '.img')):
                     import pydicom
                     import numpy as np
                     ds = pydicom.dcmread(file_path)

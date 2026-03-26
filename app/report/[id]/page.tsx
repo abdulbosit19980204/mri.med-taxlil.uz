@@ -76,7 +76,10 @@ export default function ReportPage({ params }: { params: { id: string } }) {
     const { result, status, type, user_email, created_at } = analysis
     const aiResult = result?.ai_analysis || result
     const metadata = result?.dicom_metadata || {}
-    const isDicom = result?.is_dicom || analysis.file?.toLowerCase().endsWith('.dcm')
+    const isDicom = result?.is_dicom || 
+                    analysis.file?.toLowerCase().endsWith('.dcm') || 
+                    analysis.file?.toLowerCase().endsWith('.ima') || 
+                    analysis.file?.toLowerCase().endsWith('.img')
     const dicomUrl = getFullUrl(analysis.file)
     // Build absolute frame URLs (backend may return relative /media/... paths)
     const frames: string[] = (result?.frames || []).map((f: string) => getFullUrl(f))

@@ -274,26 +274,27 @@ class AnalysisViewSet(viewsets.ModelViewSet):
                     with zipfile.ZipFile(file_path, 'r') as zip_ref:
                         zip_ref.extractall(temp_dir)
                     
-                    # Find all DICOM files
-                    dcm_files = []
+                    # Find all medical imaging files (DCM, IMA, etc)
+                    medical_files = []
+                    valid_exts = ('.dcm', '.ima', '.img', '.hdr', '.nii')
                     for root, dirs, files in os.walk(temp_dir):
                         for f in files:
-                            if f.lower().endswith('.dcm'):
-                                dcm_files.append(os.path.join(root, f))
+                            if f.lower().endswith(valid_exts):
+                                medical_files.append(os.path.join(root, f))
                     
-                    if dcm_files:
+                    if medical_files:
                         # Select the middle frame as representative
-                        dcm_files.sort()
-                        target_process_path = dcm_files[len(dcm_files) // 2]
-                        print(f"ZIP detected with {len(dcm_files)} series. Selecting {os.path.basename(target_process_path)}")
+                        medical_files.sort()
+                        target_process_path = medical_files[len(medical_files) // 2]
+                        print(f"ZIP detected with {len(medical_files)} files. Selecting {os.path.basename(target_process_path)}")
                     else:
                         print("No DICOM files found in ZIP.")
                 except Exception as e:
                     print(f"ZIP Extraction error: {e}")
 
-            # 2. Process DICOM (either single or from ZIP)
+            # 2. Process Medical Image (DCM, IMA, etc)
             dicom_metadata = {}
-            if target_process_path.lower().endswith('.dcm'):
+            if target_process_path.lower().endswith(('.dcm', '.ima', '.img')):
                 try:
                     import pydicom
                     import numpy as np
@@ -442,7 +443,7 @@ class AnalysisViewSet(viewsets.ModelViewSet):
             final_result = {
                 "ai_analysis": ai_result,
                 "dicom_metadata": dicom_metadata,
-                "is_dicom": target_process_path.lower().endswith('.dcm'),
+                "is_dicom": target_process_path.lower().endswith(('.dcm', '.ima', '.img')),
                 "file_path": analysis.file.url,
                 "frames": frame_urls if 'frame_urls' in dir() else []
             }

@@ -5,6 +5,7 @@ import './globals.css'
 import { ClientLayout } from "@/components/client-layout"
 import { LanguageProvider } from "@/context/language-context"
 import { AuthProvider } from "@/context/auth-context"
+import { Toaster } from 'sonner'
 
 const geist = Geist({
   subsets: ["latin", "latin-ext"],
@@ -43,6 +44,7 @@ export default function RootLayout({
             </ClientLayout>
           </LanguageProvider>
         </AuthProvider>
+        <Toaster theme="dark" position="top-right" richColors />
         {isVercelProduction && <Analytics />}
       </body>
     </html>

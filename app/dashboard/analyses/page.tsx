@@ -12,6 +12,8 @@ import { apiClient } from '@/lib/api-client'
 import { useEffect, useState, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import { exportAnalysisPDF } from '@/lib/export-pdf'
+import ConfirmationModal from '@/components/confirmation-modal'
+import { toast } from 'sonner'
 
 /** Build absolute URL from a relative /media/... path. */
 function toAbsUrl(path: string): string {
@@ -46,6 +48,10 @@ export default function AnalysesPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
+
+  // Delete Modal State
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: '' })
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -87,23 +93,26 @@ export default function AnalysesPage() {
     }
   }
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!window.confirm("Haqiqatdan ham bu tahlilni o'chirib tashlamoqchimisiz? Barcha fayllar va hisobotlar butunlay yo'qoladi.")) return
+  const handleDelete = async () => {
+    if (!deleteModal.id) return
+    setIsDeleting(true)
     
-    try {
-      const res = await apiClient.delete(`/analyses/${id}/`)
-      if (res.ok) {
-        setAnalyses(prev => prev.filter(p => p.id !== id))
+    const promise = apiClient.delete(`/analyses/${deleteModal.id}/`)
+    
+    toast.promise(promise, {
+      loading: 'Tahlil o\'chirilmoqda...',
+      success: () => {
+        setAnalyses(prev => prev.filter(p => p.id !== deleteModal.id))
         setTotalCount(prev => prev - 1)
-      } else {
-        alert("O'chirishda xatolik yuz berdi")
+        setDeleteModal({ isOpen: false, id: '' })
+        setIsDeleting(false)
+        return 'Tahlil muvaffaqiyatli o\'chirildi'
+      },
+      error: () => {
+        setIsDeleting(false)
+        return 'O\'chirishda xatolik yuz berdi'
       }
-    } catch (err) {
-      console.error(err)
-      alert("Server bilan bog'lanishda xatolik")
-    }
+    })
   }
 
   const handleDownload = async (analysis: any, e: React.MouseEvent) => {
@@ -111,16 +120,17 @@ export default function AnalysesPage() {
     e.stopPropagation()
     
     if (analysis.status === 'COMPLETED') {
-      // Logic from walkthrough suggests PDF is favored for completed
+      toast.info('Hisobot tayyorlanmoqda...')
       try {
         await exportAnalysisPDF(analysis)
+        toast.success('Hisobot yuklab olindi')
       } catch (err) {
         console.error(err)
-        // Fallback to raw file if PDF fails
+        toast.error('PDF yaratishda xatolik, original fayl yuklanmoqda')
         window.open(toAbsUrl(analysis.file), '_blank')
       }
     } else {
-      // Just download the raw file for pending/processing
+      toast.info('Original fayl yuklanmoqda...')
       window.open(toAbsUrl(analysis.file), '_blank')
     }
   }
@@ -274,7 +284,11 @@ export default function AnalysesPage() {
                       size="sm"
                       className="text-red-500 hover:bg-red-500/10"
                       title="O'chirish"
-                      onClick={(e) => handleDelete(analysis.id, e)}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setDeleteModal({ isOpen: true, id: analysis.id })
+                      }}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -330,6 +344,18 @@ export default function AnalysesPage() {
             </Link>
           </Card>
         )}
+
+        {/* Modern Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={deleteModal.isOpen}
+          onClose={() => setDeleteModal({ isOpen: false, id: '' })}
+          onConfirm={handleDelete}
+          loading={isDeleting}
+          title="Tahlilni o'chirish"
+          description="Haqiqatdan ham bu tahlilni o'chirib tashlamoqchimisiz? Barcha fayllar, AI xulosalari va chat tarixi butunlay yo'qoladi. Bu amalni qaytarib bo'lmaydi."
+          confirmText="O'chirish"
+          variant="danger"
+        />
       </div>
     </div>
   )

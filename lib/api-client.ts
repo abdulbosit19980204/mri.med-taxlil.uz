@@ -36,4 +36,5 @@ export const apiClient = {
         method: 'POST',
         body: formData,
     }),
+    delete: (endpoint: string) => fetchWithAuth(endpoint, { method: 'DELETE' }),
 };

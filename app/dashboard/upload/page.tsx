@@ -65,8 +65,9 @@ export default function UploadPage() {
         fileObj.preview = URL.createObjectURL(file)
       }
 
-      // Parse DICOM
-      if (file.name.toLowerCase().endsWith('.dcm')) {
+      // Parse DICOM / Medical Metadata
+      const isMedical = file.name.toLowerCase().endsWith('.dcm') || file.name.toLowerCase().endsWith('.ima')
+      if (isMedical) {
         try {
           const buffer = await file.arrayBuffer()
           const dataSet = dicomParser.parseDicom(new Uint8Array(buffer))
@@ -182,13 +183,13 @@ export default function UploadPage() {
                 Fayllarni yuklang yoki sura qiling
               </h3>
               <p className="text-muted-foreground mb-8 text-xs uppercase tracking-[0.2em] opacity-60">
-                DICOM (.dcm), NIfTI (.nii) va rasm formatlari
+                DICOM (.dcm), Siemens (.ima), NIfTI (.nii) va rasm formatlari
               </p>
               <input
                 ref={fileInputRef}
                 type="file"
                 multiple
-                accept=".dcm,.nii,.jpg,.jpeg,.png"
+                accept=".dcm,.ima,.img,.nii,.jpg,.jpeg,.png"
                 onChange={(e) => e.target.files && handleFiles(e.target.files)}
                 className="hidden"
               />
