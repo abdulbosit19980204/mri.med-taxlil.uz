@@ -349,30 +349,67 @@ function StatCard({ title, value, trend, icon, color, chart }: { title: string, 
     )
 }
 
+/** Derive health level from AI findings. Returns 'healthy' | 'warning' | 'sick' */
+function getHealthLevel(item: any): 'healthy' | 'warning' | 'sick' | 'unknown' {
+    const findings: any[] = item.result?.ai_analysis?.findings || []
+    if (!findings.length) return 'unknown'
+    const bad = findings.filter(f => f.status && !['CLEAR','NORMAL','OPTIMAL','VALID'].includes(f.status.toUpperCase()))
+    if (bad.length === 0) return 'healthy'
+    if (bad.length >= findings.length) return 'sick'
+    return 'warning'
+}
+
+const HEALTH_STYLES = {
+    healthy: {
+        icon:   'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+        badge:  'bg-emerald-500/10 text-emerald-500 border-emerald-500/30',
+        label:  '✓ Sog\'lom',
+        left:   'border-l-4 border-emerald-500/40',
+    },
+    warning: {
+        icon:   'bg-amber-500/10 text-amber-500 border-amber-500/20',
+        badge:  'bg-amber-500/10 text-amber-500 border-amber-500/30',
+        label:  '⚠ Shubhali',
+        left:   'border-l-4 border-amber-500/40',
+    },
+    sick: {
+        icon:   'bg-red-500/10 text-red-500 border-red-500/20',
+        badge:  'bg-red-500/10 text-red-500 border-red-500/30',
+        label:  '✕ Kassal',
+        left:   'border-l-4 border-red-500/40',
+    },
+    unknown: {
+        icon:   'bg-primary/10 text-primary border-primary/20',
+        badge:  'bg-slate-500/10 text-slate-400 border-slate-500/20',
+        label:  '— Noma\'lum',
+        left:   '',
+    },
+}
+
 function AnalysisRow({ item, t }: { item: any, t: any }) {
-    const isBrain = item.type?.toLowerCase().includes('brain')
+    const health = getHealthLevel(item)
+    const style = HEALTH_STYLES[health]
     const date = new Date(item.created_at)
+    const scanLabel = item.scan_type || item.type || 'MRI'
 
     return (
         <Link href={`/report/${item.id}`}>
-            <div className="flex items-center justify-between p-6 bg-white dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-[32px] hover:border-primary transition-all group cursor-pointer shadow-sm hover:shadow-2xl hover:shadow-black/5 text-left">
+            <div className={`flex items-center justify-between p-6 bg-white dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-[32px] hover:border-primary transition-all group cursor-pointer shadow-sm hover:shadow-2xl hover:shadow-black/5 text-left ${style.left}`}>
                 <div className="flex items-center gap-6">
-                    <div className={cn(
-                        "h-16 w-16 rounded-2xl flex items-center justify-center font-black text-2xl transition-transform group-hover:scale-110 shadow-inner overflow-hidden border border-slate-100 dark:border-white/10",
-                        isBrain ? "bg-blue-500/10 text-blue-500" : "bg-emerald-500/10 text-emerald-500"
-                    )}>
+                    <div className={`h-16 w-16 rounded-2xl flex items-center justify-center font-black text-2xl transition-transform group-hover:scale-110 shadow-inner overflow-hidden border ${style.icon}`}>
                         {item.preview_image ? (
                             <img src={item.preview_image} alt="Scan" className="w-full h-full object-cover" />
                         ) : (
-                            isBrain ? 'BR' : 'MR'
+                            scanLabel.slice(0, 2).toUpperCase()
                         )}
                     </div>
                     <div className="space-y-1 text-left">
                         <p className="font-black text-lg text-slate-900 dark:text-white group-hover:text-primary transition-colors truncate max-w-[200px]">
                             {item.patient_name || item.result?.dicom_metadata?.Patient?.PatientName || item.user_email || 'Subject_Alpha'}
                         </p>
-                        <div className="flex items-center gap-3">
-                            <Badge variant="outline" className="text-[10px] font-bold uppercase border-slate-200 dark:border-white/10">{item.type}</Badge>
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <Badge variant="outline" className="text-[10px] font-bold uppercase border-slate-200 dark:border-white/10">{scanLabel}</Badge>
+                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${style.badge}`}>{style.label}</span>
                             <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1.5"><Clock className="h-3 w-3" /> {date.toLocaleDateString()}</span>
                         </div>
                     </div>
@@ -384,12 +421,11 @@ function AnalysisRow({ item, t }: { item: any, t: any }) {
                         <p className="text-[10px] font-bold text-primary italic">SECURE_LINK</p>
                     </div>
 
-                    <div className={cn(
-                        "px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border",
+                    <div className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border ${
                         item.status === 'COMPLETED'
-                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                            : "bg-amber-500/10 text-amber-500 border-amber-500/20 active-glow"
-                    )}>
+                            ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                            : 'bg-amber-500/10 text-amber-500 border-amber-500/20 active-glow'
+                    }`}>
                         {item.status}
                     </div>
 

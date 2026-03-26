@@ -12,6 +12,23 @@ import { apiClient } from '@/lib/api-client'
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 
+/** Compute health level from AI findings */
+function getHealthLevel(item: any): 'healthy' | 'warning' | 'sick' | 'unknown' {
+  const findings: any[] = item.result?.ai_analysis?.findings || []
+  if (!findings.length) return 'unknown'
+  const bad = findings.filter(f => f.status && !['CLEAR','NORMAL','OPTIMAL','VALID'].includes(f.status.toUpperCase()))
+  if (bad.length === 0) return 'healthy'
+  if (bad.length >= findings.length) return 'sick'
+  return 'warning'
+}
+
+const HEALTH = {
+  healthy: { border: 'border-l-4 border-emerald-500',  badge: 'bg-emerald-500/10 text-emerald-500',  label: '✓ Sog\'lom' },
+  warning: { border: 'border-l-4 border-amber-500',    badge: 'bg-amber-500/10 text-amber-500',    label: '⚠ Shubhali' },
+  sick:    { border: 'border-l-4 border-red-500',      badge: 'bg-red-500/10 text-red-500',        label: '✕ Kassal' },
+  unknown: { border: '',                                badge: 'bg-slate-500/10 text-slate-400',   label: '— Noma\'lum' },
+}
+
 export default function AnalysesPage() {
   const { t } = useLanguage()
   const [searchQuery, setSearchQuery] = useState('')
@@ -155,8 +172,11 @@ export default function AnalysesPage() {
           </div>
         ) : filteredAnalyses.length > 0 ? (
           <div className="grid gap-4">
-            {filteredAnalyses.map((analysis) => (
-              <Card key={analysis.id} className="p-6 border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 hover:border-primary/50 transition-colors shadow-sm">
+            {filteredAnalyses.map((analysis) => {
+              const health = getHealthLevel(analysis)
+              const hs = HEALTH[health]
+              return (
+              <Card key={analysis.id} className={`p-6 border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 hover:border-primary/50 transition-colors shadow-sm overflow-hidden ${hs.border}`}>
                 <div className="flex items-center justify-between gap-4 text-left">
                   {/* Left Content */}
                   <div className="flex-1 min-w-0">
@@ -173,10 +193,8 @@ export default function AnalysesPage() {
                       <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-primary/10 text-primary rounded-full">
                         {getStatusLabel(analysis.status)}
                       </span>
-                      <span className={cn("text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full", getRiskColor(analysis.result?.ai_analysis?.overall_risk || 'low'))}>
-                        Risk:{' '}
-                        {analysis.result?.ai_analysis?.overall_risk === 'high' ? 'Yuqori' :
-                          analysis.result?.ai_analysis?.overall_risk === 'medium' ? 'O\'rta' : 'Past'}
+                      <span className={cn("text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full", hs.badge)}>
+                        {hs.label}
                       </span>
                       <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-emerald-500/10 text-emerald-500 rounded-full">
                         AI Ehtimoli: {((analysis.result?.ai_analysis?.accuracy || 0) * 100).toFixed(1)}%
@@ -215,7 +233,8 @@ export default function AnalysesPage() {
                   </div>
                 </div>
               </Card>
-            ))}
+              )
+            })}
 
             {/* Pagination Controls */}
             {totalPages > 1 && (

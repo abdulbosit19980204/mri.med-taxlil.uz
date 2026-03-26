@@ -304,10 +304,41 @@ export default function UploadPage() {
                   onChange={e => setScanType(e.target.value)}
                   className="w-full h-14 px-6 rounded-2xl border border-slate-200 bg-slate-50 text-slate-900 text-sm font-bold uppercase focus:border-primary outline-none appearance-none cursor-pointer"
                 >
-                  <option value="BRAIN">Bosh MRI</option>
-                  <option value="SPINE">Umurtqa MRI</option>
-                  <option value="KNEE">Tizza MRI</option>
-                  <option value="CT">CT Skan</option>
+                  <optgroup label="MRI — Bosh va Miya">
+                    <option value="BRAIN">Bosh miya MRI</option>
+                    <option value="BRAIN_FMRI">Funksional MRI (fMRI)</option>
+                    <option value="BRAIN_DWI">Diffuzion MRI (DWI)</option>
+                    <option value="BRAIN_ANGIO">MR Angiografiya (Bosh)</option>
+                  </optgroup>
+                  <optgroup label="MRI — Umurtqa">
+                    <option value="SPINE_CERVICAL">Boyin umurtqasi MRI</option>
+                    <option value="SPINE_THORACIC">Kokrak umurtqasi MRI</option>
+                    <option value="SPINE_LUMBAR">Bel umurtqasi MRI</option>
+                  </optgroup>
+                  <optgroup label="MRI — Bogimlar">
+                    <option value="KNEE">Tizza bogimi MRI</option>
+                    <option value="SHOULDER">Yelka bogimi MRI</option>
+                    <option value="HIP">Tos-son bogimi MRI</option>
+                    <option value="WRIST">Bilak bogimi MRI</option>
+                    <option value="ANKLE">Topiq bogimi MRI</option>
+                  </optgroup>
+                  <optgroup label="MRI — Ichki Azolar">
+                    <option value="ABDOMEN">Qorin boshlig'i MRI</option>
+                    <option value="PELVIS">Tos MRI</option>
+                    <option value="LIVER">Jigar MRI</option>
+                    <option value="PROSTATE">Prostata MRI</option>
+                    <option value="BREAST">Kokrak bezi MRI</option>
+                    <option value="CARDIAC">Yurak MRI (Cardiac)</option>
+                    <option value="CHEST">Kokrak qafasi MRI</option>
+                    <option value="WHOLE_BODY">Butun tana MRI</option>
+                  </optgroup>
+                  <optgroup label="Boshqa Usullar">
+                    <option value="CT">KT (Kompyuter Tomografiya)</option>
+                    <option value="CT_ANGIO">KT Angiografiya</option>
+                    <option value="PET">PET Skan</option>
+                    <option value="XRAY">Rentgen (X-Ray)</option>
+                    <option value="OTHER">Boshqa (Other)</option>
+                  </optgroup>
                 </select>
               </div>
             </div>
