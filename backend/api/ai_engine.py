@@ -47,10 +47,9 @@ class MedicalAIEngine:
             
             # List of models to try in order of preference
             models_to_try = [
-                'gemini-1.5-pro',
-                'gemini-1.5-flash',
-                'gemini-1.0-pro-vision',
-                'gemini-pro-vision'
+                'gemini-2.5-flash',
+                'gemini-2.5-pro',
+                'gemini-flash-latest'
             ]
 
             img = None
@@ -93,6 +92,7 @@ class MedicalAIEngine:
                 Return ONLY the JSON. Do not include markdown formatting.
                 """
 
+                last_errors = []
                 for model_name in models_to_try:
                     try:
                         print(f"Attempting analysis with model: {model_name}")
@@ -112,10 +112,12 @@ class MedicalAIEngine:
                         return result
                         
                     except Exception as e:
-                        print(f"Failed with {model_name}: {e}")
+                        error_msg = f"Failed with {model_name}: {e}"
+                        print(error_msg)
+                        last_errors.append(error_msg)
                         continue
                 
-                print("All Gemini models failed. Falling back to simulation.")
+                print(f"All Gemini models failed. Errors: {'; '.join(last_errors)}. Falling back to simulation.")
 
         # Deterministic Fallback Simulation
         seed_val = int(hashlib.sha256(file_path.encode('utf-8')).hexdigest(), 16)
@@ -231,13 +233,12 @@ Keep responses concise but informative. Use medical terminology appropriately.""
 
         # Try models in order (Fallback strategy)
         models_to_try = [
-            'gemini-1.5-pro',
-            'gemini-1.5-flash', 
-            'gemini-pro',
-            'gemini-1.0-pro'
+            'gemini-2.5-flash',
+            'gemini-2.5-pro',
+            'gemini-flash-latest'
         ]
         
-        last_error = None
+        last_errors = []
         
         for model_name in models_to_try:
             try:
@@ -256,12 +257,14 @@ Keep responses concise but informative. Use medical terminology appropriately.""
                     "error": False
                 }
             except Exception as e:
-                last_error = str(e)
+                error_msg = f"{model_name} failed: {e}"
+                last_errors.append(error_msg)
                 continue
         
-        print(f"All chat models failed. Last error: {last_error}")
+        all_errors_str = "; ".join(last_errors)
+        print(f"All chat models failed. Details: {all_errors_str}")
         return {
-            "response": f"System Error: Unable to connect to AI models. Details: {last_error}",
+            "response": f"System Error: Unable to connect to AI models. Details: {all_errors_str}",
             "error": True
         }
 
