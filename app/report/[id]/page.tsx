@@ -12,6 +12,7 @@ import dynamic from 'next/dynamic'
 import { apiClient } from "@/lib/api-client"
 import { useLanguage } from "@/context/language-context"
 import AIChat from "@/components/ai-chat"
+import { exportAnalysisPDF } from "@/lib/export-pdf"
 
 const DicomViewer = dynamic(() => import('@/components/dicom-viewer'), { ssr: false })
 const BrainViewer3D = dynamic(() => import('@/components/brain-viewer-3d'), { ssr: false })
@@ -22,6 +23,7 @@ export default function ReportPage({ params }: { params: { id: string } }) {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState("")
     const [showChat, setShowChat] = useState(false)
+    const [exporting, setExporting] = useState(false)
 
     useEffect(() => {
         async function fetchAnalysis() {
@@ -109,8 +111,20 @@ export default function ReportPage({ params }: { params: { id: string } }) {
                         <div className={`h-2 w-2 rounded-full ${status === 'COMPLETED' ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`} />
                         SYSTEM_{status}
                     </div>
-                    <Button variant="outline" className="border-primary/50 text-primary hover:bg-primary hover:text-white transition-all uppercase text-xs tracking-wider gap-2">
-                        <Download className="h-3 w-3" /> {t.report.export}
+                    <Button
+                        variant="outline"
+                        disabled={exporting}
+                        className="border-primary/50 text-primary hover:bg-primary hover:text-white transition-all uppercase text-xs tracking-wider gap-2"
+                        onClick={async () => {
+                            setExporting(true)
+                            try { await exportAnalysisPDF(analysis) }
+                            finally { setExporting(false) }
+                        }}
+                    >
+                        {exporting
+                            ? <><Loader2 className="h-3 w-3 animate-spin" /> Exporting...</>
+                            : <><Download className="h-3 w-3" /> {t.report.export}</>
+                        }
                     </Button>
                 </div>
             </header>
