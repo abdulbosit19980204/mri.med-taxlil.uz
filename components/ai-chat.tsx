@@ -34,25 +34,37 @@ export default function AIChat({ analysisId, onClose }: AIChatProps) {
     }, [messages])
 
     useEffect(() => {
-        // Send initial greeting request
+        // Fetch existing history or start new chat
         const initChat = async () => {
             try {
+                // Fetch history by sending an empty message
                 const res = await apiClient.post(`/analyses/${analysisId}/chat/`, {
-                    message: "Please provide a brief initial analysis summary of this scan, including key findings and any notable observations.",
-                    history: []
+                    message: ""
                 })
 
                 if (res.ok) {
                     const data = await res.json()
-                    if (!data.error) {
-                        setMessages([{
-                            role: 'assistant',
-                            content: data.response
-                        }])
+                    if (data.history && data.history.length > 0) {
+                        // Restore existing chat
+                        setMessages(data.history)
+                    } else {
+                        // Brand new chat -> Trigger initial greeting
+                        const greetRes = await apiClient.post(`/analyses/${analysisId}/chat/`, {
+                            message: "Please provide a brief initial analysis summary of this scan, including key findings and any notable observations."
+                        })
+                        if (greetRes.ok) {
+                            const greetData = await greetRes.json()
+                            if (greetData.response) {
+                                setMessages([{
+                                    role: 'assistant',
+                                    content: greetData.response
+                                }])
+                            }
+                        }
                     }
                 }
             } catch (e) {
-                // Silent error handling for metrics/analytics in production
+                console.error("Chat init error:", e)
             } finally {
                 setInitializing(false)
             }
@@ -75,15 +87,15 @@ export default function AIChat({ analysisId, onClose }: AIChatProps) {
 
         try {
             const res = await apiClient.post(`/analyses/${analysisId}/chat/`, {
-                message: input,
-                history: messages.map(m => ({ role: m.role, content: m.content }))
+                message: input
+                // history is handled by DB on backend
             })
 
             if (res.ok) {
                 const data = await res.json()
                 const aiMessage: Message = {
                     role: 'assistant',
-                    content: data.response // Show the actual response, which contains error details if failed
+                    content: data.response
                 }
                 setMessages(prev => [...prev, aiMessage])
             }
