@@ -323,41 +323,69 @@ class AnalysisViewSet(viewsets.ModelViewSet):
 
                     pixel_array = ds.pixel_array
                     
-                    # Handle multi-frame (3D) DICOM — pick the middle slice
-                    if pixel_array.ndim == 3:
-                        mid = pixel_array.shape[0] // 2
-                        pixel_array = pixel_array[mid]
-                        print(f"Multi-frame DICOM detected ({pixel_array.shape[0] if hasattr(pixel_array,'shape') else '?'} frames). Using middle slice at index {mid}.")
-                    elif pixel_array.ndim > 3:
-                        # 4-D edge case (e.g. RGB multi-frame) — flatten to 2-D
-                        pixel_array = pixel_array[pixel_array.shape[0] // 2, :, :, 0]
-                    
-                    # Apply windowing if DICOM specifies it, for better contrast
+                    # --- Multi-frame extraction ---
+                    # Determine window/level for contrast
                     try:
                         wc = float(getattr(ds, 'WindowCenter', None) or 0)
                         ww = float(getattr(ds, 'WindowWidth', None) or 0)
-                        if ww > 0:
-                            low = wc - ww / 2
-                            high = wc + ww / 2
-                            pixel_array = np.clip(pixel_array, low, high)
                     except Exception:
-                        pass  # Fall back to simple normalization
+                        wc, ww = 0, 0
 
-                    # Normalize to uint8 (0–255)
-                    pmin, pmax = pixel_array.min(), pixel_array.max()
-                    if pmax > pmin:
-                        pixel_array = ((pixel_array - pmin) / (pmax - pmin) * 255).astype(np.uint8)
+                    def normalize_frame(frame_2d):
+                        """Apply windowing + normalize a 2D numpy frame to uint8 RGB."""
+                        f = frame_2d.astype(np.float32)
+                        if ww > 0:
+                            f = np.clip(f, wc - ww / 2, wc + ww / 2)
+                        pmin, pmax = f.min(), f.max()
+                        if pmax > pmin:
+                            f = ((f - pmin) / (pmax - pmin) * 255).astype(np.uint8)
+                        else:
+                            f = np.zeros_like(f, dtype=np.uint8)
+                        return Image.fromarray(f, mode='L').convert('RGB')
+
+                    # Build list of all frames
+                    if pixel_array.ndim == 2:
+                        all_frames = [pixel_array]
+                    elif pixel_array.ndim == 3:
+                        # Could be (frames, H, W) or (H, W, channels)
+                        if pixel_array.shape[2] in (1, 3, 4):
+                            # RGB single frame
+                            all_frames = [pixel_array[:, :, 0]]
+                        else:
+                            all_frames = [pixel_array[i] for i in range(pixel_array.shape[0])]
+                    elif pixel_array.ndim == 4:
+                        # (frames, H, W, channels)
+                        all_frames = [pixel_array[i, :, :, 0] for i in range(pixel_array.shape[0])]
                     else:
-                        pixel_array = np.zeros_like(pixel_array, dtype=np.uint8)
+                        all_frames = [pixel_array]
 
-                    # Convert grayscale to RGB for wider browser compatibility
-                    img = Image.fromarray(pixel_array, mode='L').convert('RGB')
-                    
-                    # Save to preview_image field
+                    print(f"DICOM has {len(all_frames)} frames.")
+
+                    # Save frames directory: media/frames/{analysis_id}/
+                    import uuid
+                    from django.conf import settings as django_settings
+                    frames_dir_rel = f"frames/{analysis_id}"
+                    frames_dir_abs = os.path.join(django_settings.MEDIA_ROOT, frames_dir_rel)
+                    os.makedirs(frames_dir_abs, exist_ok=True)
+
+                    frame_urls = []
+                    frames_base_url = f"{django_settings.MEDIA_URL}{frames_dir_rel}"
+
+                    for idx, frame_2d in enumerate(all_frames):
+                        frame_img = normalize_frame(frame_2d)
+                        frame_filename = f"slice_{idx:04d}.png"
+                        frame_abs_path = os.path.join(frames_dir_abs, frame_filename)
+                        frame_img.save(frame_abs_path, format="PNG")
+                        frame_urls.append(f"{frames_base_url}/{frame_filename}")
+
+                    # Use middle frame as legacy preview_image
+                    mid_idx = len(all_frames) // 2
+                    img = normalize_frame(all_frames[mid_idx])
                     buffer = BytesIO()
                     img.save(buffer, format="PNG")
                     preview_name = os.path.basename(file_path).split('.')[0] + "_preview.png"
                     analysis.preview_image.save(preview_name, ContentFile(buffer.getvalue()), save=False)
+
                     
                     # Proactively fill patient metadata from DICOM if empty
                     try:
@@ -391,7 +419,8 @@ class AnalysisViewSet(viewsets.ModelViewSet):
                 "ai_analysis": ai_result,
                 "dicom_metadata": dicom_metadata,
                 "is_dicom": target_process_path.lower().endswith('.dcm'),
-                "file_path": analysis.file.url
+                "file_path": analysis.file.url,
+                "frames": frame_urls if 'frame_urls' in dir() else []
             }
 
             # Update record

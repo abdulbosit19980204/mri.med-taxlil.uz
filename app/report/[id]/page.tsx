@@ -76,6 +76,8 @@ export default function ReportPage({ params }: { params: { id: string } }) {
     const metadata = result?.dicom_metadata || {}
     const isDicom = result?.is_dicom || analysis.file?.toLowerCase().endsWith('.dcm')
     const dicomUrl = getFullUrl(analysis.file)
+    // Build absolute frame URLs (backend may return relative /media/... paths)
+    const frames: string[] = (result?.frames || []).map((f: string) => getFullUrl(f))
 
     return (
         <div className="flex flex-col h-screen bg-black text-white overflow-hidden font-mono text-left">
@@ -216,7 +218,7 @@ export default function ReportPage({ params }: { params: { id: string } }) {
                                     </div>
 
                                     {isDicom ? (
-                                        <DicomViewer imageUrl={dicomUrl} className="flex-1" />
+                                        <DicomViewer imageUrl={dicomUrl} frames={frames} className="flex-1" />
                                     ) : (
                                         <div className="flex-1 relative border border-primary/20 rounded-3xl overflow-hidden bg-black/50 group">
                                             <img
