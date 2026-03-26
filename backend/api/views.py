@@ -323,11 +323,35 @@ class AnalysisViewSet(viewsets.ModelViewSet):
 
                     pixel_array = ds.pixel_array
                     
-                    # Normalize to 0-255
-                    if pixel_array.max() > 0:
-                        pixel_array = ((pixel_array - pixel_array.min()) / (pixel_array.max() - pixel_array.min()) * 255).astype(np.uint8)
+                    # Handle multi-frame (3D) DICOM — pick the middle slice
+                    if pixel_array.ndim == 3:
+                        mid = pixel_array.shape[0] // 2
+                        pixel_array = pixel_array[mid]
+                        print(f"Multi-frame DICOM detected ({pixel_array.shape[0] if hasattr(pixel_array,'shape') else '?'} frames). Using middle slice at index {mid}.")
+                    elif pixel_array.ndim > 3:
+                        # 4-D edge case (e.g. RGB multi-frame) — flatten to 2-D
+                        pixel_array = pixel_array[pixel_array.shape[0] // 2, :, :, 0]
                     
-                    img = Image.fromarray(pixel_array)
+                    # Apply windowing if DICOM specifies it, for better contrast
+                    try:
+                        wc = float(getattr(ds, 'WindowCenter', None) or 0)
+                        ww = float(getattr(ds, 'WindowWidth', None) or 0)
+                        if ww > 0:
+                            low = wc - ww / 2
+                            high = wc + ww / 2
+                            pixel_array = np.clip(pixel_array, low, high)
+                    except Exception:
+                        pass  # Fall back to simple normalization
+
+                    # Normalize to uint8 (0–255)
+                    pmin, pmax = pixel_array.min(), pixel_array.max()
+                    if pmax > pmin:
+                        pixel_array = ((pixel_array - pmin) / (pmax - pmin) * 255).astype(np.uint8)
+                    else:
+                        pixel_array = np.zeros_like(pixel_array, dtype=np.uint8)
+
+                    # Convert grayscale to RGB for wider browser compatibility
+                    img = Image.fromarray(pixel_array, mode='L').convert('RGB')
                     
                     # Save to preview_image field
                     buffer = BytesIO()

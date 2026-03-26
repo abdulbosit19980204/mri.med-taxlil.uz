@@ -283,6 +283,54 @@ export default function ReportPage({ params }: { params: { id: string } }) {
     )
 }
 
+/** Formats any DICOM value (string, array, nested object/sequence) into readable text */
+function formatDicomValue(value: any, depth = 0): React.ReactNode {
+    if (value === null || value === undefined) return <span className="text-slate-600 italic">N/A</span>
+
+    // Sequence (array of objects) – render each item as collapsible sub-section
+    if (Array.isArray(value)) {
+        if (value.length === 0) return <span className="text-slate-600 italic">Empty</span>
+        // Array of primitives – join them
+        if (typeof value[0] !== 'object') return <span className="text-slate-200">{value.join(', ')}</span>
+        // Array of objects (DICOM sequence)
+        return (
+            <div className="space-y-1 mt-1">
+                {value.map((item: any, i: number) => (
+                    <div key={i} className="border-l border-primary/10 pl-2">
+                        <span className="text-[8px] text-primary/30 uppercase font-bold">Item {i + 1}</span>
+                        {typeof item === 'object' && item !== null
+                            ? Object.entries(item).map(([k, v]: [string, any]) => (
+                                <div key={k} className="flex flex-col mt-0.5">
+                                    <span className="text-[8px] uppercase text-slate-600 font-bold tracking-wider">{k}</span>
+                                    <span className="text-[10px] text-slate-300">{formatDicomValue(v, depth + 1)}</span>
+                                </div>
+                            ))
+                            : <span className="text-[10px] text-slate-300">{String(item)}</span>
+                        }
+                    </div>
+                ))}
+            </div>
+        )
+    }
+
+    // Plain object (nested tags)
+    if (typeof value === 'object') {
+        return (
+            <div className="space-y-1 mt-1">
+                {Object.entries(value).map(([k, v]: [string, any]) => (
+                    <div key={k} className="border-l border-primary/10 pl-2">
+                        <span className="text-[8px] uppercase text-slate-600 font-bold tracking-wider">{k}</span>
+                        <div className="text-[10px] text-slate-300">{formatDicomValue(v, depth + 1)}</div>
+                    </div>
+                ))}
+            </div>
+        )
+    }
+
+    // Primitive
+    return <span className="text-slate-200">{String(value)}</span>
+}
+
 function MetadataSection({ title, icon, data }: { title: string, icon: React.ReactNode, data: any }) {
     if (!data || Object.keys(data).length === 0) return null;
 
@@ -295,8 +343,8 @@ function MetadataSection({ title, icon, data }: { title: string, icon: React.Rea
             <div className="border-l border-primary/20 ml-1.5 pl-4 space-y-2">
                 {Object.entries(data).map(([key, value]: [string, any]) => (
                     <div key={key} className="flex flex-col">
-                        <span className="text-[9px] uppercase text-slate-500 font-bold tracking-widest">{key.replace('_', ' ')}</span>
-                        <span className="text-xs text-slate-200 truncate">{Array.isArray(value) ? value.join(', ') : String(value)}</span>
+                        <span className="text-[9px] uppercase text-slate-500 font-bold tracking-widest">{key.replace(/_/g, ' ')}</span>
+                        <div className="text-xs">{formatDicomValue(value)}</div>
                     </div>
                 ))}
             </div>
