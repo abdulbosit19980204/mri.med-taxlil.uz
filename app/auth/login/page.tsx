@@ -37,7 +37,8 @@ export default function LoginPage() {
     const password = formData.get("password")
 
     try {
-      const res = await fetch('http://localhost:8000/api/auth/token/', {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+      const res = await fetch(`${apiBase}/auth/token/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -50,7 +51,7 @@ export default function LoginPage() {
       }
 
       // Fetch user profile info
-      const meRes = await fetch('http://localhost:8000/api/me/', {
+      const meRes = await fetch(`${apiBase}/me/`, {
         headers: { 
           'Authorization': `Bearer ${data.access}`
         }

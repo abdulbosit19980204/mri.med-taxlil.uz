@@ -89,7 +89,8 @@ export default function DatasetsPage() {
             // For safety in this quick implementation, I'll assume standard fetch pattern with token from localStorage
 
             const token = localStorage.getItem('auth_token')
-            const uploadRes = await fetch('http://localhost:8000/api/datasets/', {
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+            const uploadRes = await fetch(`${apiBase}/datasets/`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`
