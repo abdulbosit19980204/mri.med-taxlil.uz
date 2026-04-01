@@ -248,7 +248,8 @@ export default function ReportPage({ params }: { params: { id: string } }) {
                                     )}
                                 </div>
 
-                                {/* 3D Projection */}
+                                {/* 3D Projection & Neural Confidence - Temporarily Hidden per User Request */}
+                                {/* 
                                 <div className="w-80 h-full flex flex-col gap-4 hidden xl:flex">
                                     <div className="h-[350px] border border-primary/20 rounded-3xl bg-black/40 relative overflow-hidden group">
                                         <div className="absolute top-4 left-4 z-10">
@@ -269,6 +270,7 @@ export default function ReportPage({ params }: { params: { id: string } }) {
                                         </div>
                                     </div>
                                 </div>
+                                */}
                             </div>
                         ) : (
                             <div className="z-10 text-center space-y-6">
